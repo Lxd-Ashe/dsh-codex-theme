@@ -81,6 +81,17 @@ function PresetStrip({ knobs }: { knobs: ModeKnobs }) {
   );
 }
 
+/** 自绘下拉箭头（原生箭头已去掉，位置由 CSS 精确控制）。 */
+function Chevron() {
+  return (
+    <span className="codex-chevron" aria-hidden="true">
+      <svg viewBox="0 0 8 5" focusable="false">
+        <path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
+
 function ThemeSelectRow({
   id,
   label,
@@ -99,13 +110,16 @@ function ThemeSelectRow({
     <div className="codex-row">
       <label htmlFor={id}>{label}</label>
       <div className="codex-theme-control">
-        <select id={id} value={value} aria-label={label} onChange={(event) => onChange(Number(event.currentTarget.value))}>
-          {presets.map((preset, index) => (
-            <option key={`${preset.name}-${index}`} value={index}>
-              {preset.name}
-            </option>
-          ))}
-        </select>
+        <div className="codex-select-wrap">
+          <select id={id} value={value} aria-label={label} onChange={(event) => onChange(Number(event.currentTarget.value))}>
+            {presets.map((preset, index) => (
+              <option key={`${preset.name}-${index}`} value={index}>
+                {preset.name}
+              </option>
+            ))}
+          </select>
+          <Chevron />
+        </div>
         <PresetStrip knobs={selected.knobs} />
       </div>
     </div>
@@ -128,13 +142,16 @@ function SelectRow({
   return (
     <div className="codex-row">
       <label htmlFor={id}>{label}</label>
-      <select id={id} value={value} aria-label={label} onChange={(event) => onChange(event.currentTarget.value)}>
-        {options.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="codex-select-wrap">
+        <select id={id} value={value} aria-label={label} onChange={(event) => onChange(event.currentTarget.value)}>
+          {options.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <Chevron />
+      </div>
     </div>
   );
 }
@@ -185,7 +202,7 @@ function NumberRow({
             if (event.key === "Enter") commit((event.currentTarget as HTMLInputElement).value);
           }}
         />
-        <span>{unit}</span>
+        <span className="codex-unit" aria-hidden="true">{unit}</span>
       </div>
     </div>
   );
@@ -234,9 +251,6 @@ export function ThemePanel({ t, useStore, setThemePreset, setAppearance, setFont
       </div>
 
       <div className="codex-card">
-        <div className="codex-subheading">
-          <h3>{t("theme.title")}</h3>
-        </div>
         <div className="codex-row">
           <label id="codex-appearance-label">{t("appearance.title")}</label>
           <div className="codex-segment" role="group" aria-labelledby="codex-appearance-label">
@@ -263,9 +277,6 @@ export function ThemePanel({ t, useStore, setThemePreset, setAppearance, setFont
       </div>
 
       <div className="codex-card">
-        <div className="codex-subheading">
-          <h3>{t("font.title")}</h3>
-        </div>
         <SelectRow id="codex-ui-font" label={t("font.uiFamily")} value={settings.uiFont} options={withCurrent(uiFontOptions, settings.uiFont)} onChange={(v) => setFont("uiFont", v)} />
         <NumberRow id="codex-ui-font-size" label={t("font.uiSize")} value={settings.uiFontSize} min={9} max={32} unit="px" onChange={(v) => setFont("uiFontSize", v)} />
         <NumberRow id="codex-workspace-font-size" label={t("font.workspaceSize")} value={settings.workspaceFontSize} min={9} max={32} unit="px" onChange={(v) => setFont("workspaceFontSize", v)} />

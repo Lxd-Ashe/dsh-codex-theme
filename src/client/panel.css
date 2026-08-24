@@ -25,13 +25,9 @@
   gap: 16px;
 }
 
-.codex-header h2,
-.codex-subheading h3 {
+.codex-header h2 {
   margin: 0;
   font-weight: 500;
-}
-
-.codex-header h2 {
   font-size: 16px;
   line-height: 24px;
 }
@@ -41,13 +37,6 @@
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   line-height: 18px;
-}
-
-.codex-subheading h3 {
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--dsw-alias-label-secondary);
-  margin-bottom: 2px;
 }
 
 .codex-reset {
@@ -152,8 +141,10 @@
 }
 
 /* ── 通用控件 ─────────────────────────────────────────────────────── */
+/* 输入框与下拉框统一盒模型与几何，保证行内控件宽度/高度严格对齐 */
 .codex-panel select,
 .codex-number-control input {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   height: 34px;
@@ -163,26 +154,69 @@
   background: var(--dsw-alias-bg-base);
 }
 
-.codex-panel select {
-  padding: 4px 28px 4px 10px;
+/* 下拉选择框：去掉原生箭头自绘 chevron，文字左侧与字号输入框对齐，
+   箭头（宽 8px、右缘 16px）与输入框内 px（右缘 11px）左对齐 */
+.codex-select-wrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.codex-select-wrap select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 4px 32px 4px 10px;
   cursor: pointer;
 }
 
+.codex-select-wrap .codex-chevron {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  width: 8px;
+  height: 5px;
+  transform: translateY(-50%);
+  color: var(--dsw-alias-label-tertiary);
+  pointer-events: none;
+}
+
+.codex-select-wrap .codex-chevron svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .codex-number-control {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
+  position: relative;
+  display: block;
 }
 
 .codex-number-control input {
-  padding: 5px 9px;
+  padding: 5px 36px 5px 10px;
   font-variant-numeric: tabular-nums;
 }
 
-.codex-number-control span {
+/* 隐藏原生数字输入框的加减步进按钮（自键入值即可） */
+.codex-number-control input::-webkit-outer-spin-button,
+.codex-number-control input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.codex-number-control input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* 单位后缀（px）显示在输入框内部右侧 */
+.codex-number-control .codex-unit {
+  position: absolute;
+  top: 50%;
+  right: 11px;
+  transform: translateY(-50%);
   color: var(--dsw-alias-label-tertiary);
   font-size: 13px;
+  pointer-events: none;
 }
 
 .codex-panel input:focus-visible,
