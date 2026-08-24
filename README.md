@@ -1,52 +1,113 @@
 # dsh-codex-theme
 
-把 Codex 主题配置（`codex-themes.json`，80 款浅/深色主题）做成 DeepSeek Harness (DSH) 的主题选择插件：默认即 Codex 配色，在 **设置 → Codex 主题** 里直接选择主题预设（浅色 26 款 + 深色 54 款），并可自定义 UI/代码字体与字号；设置持久化到 `settings.yaml`，重启保持。
+Codex 主题外观插件 for DeepSeek Harness（DSH）：把 Codex 主题配置（`codex-theme-v1`，80 款浅/深色主题）做成可在 DSH 中直接切换、可自定义的外观插件。
 
-## 主题来源与映射
+## 功能
 
-主题预设由 `scripts/build-presets.mjs` 从 Codex 主题配置（VS Code 风格 `colors`/`tokenColors` 清单）转换生成 `src/client/presets.ts`（已提交，构建不依赖外部文件；重新生成：`node scripts/build-presets.mjs [path/to/codex-themes.json]`）。映射规则：`surface = editor.background`、`ink = editor.foreground`、`accent` 在 focusBorder/textLink/button/badge 中按与背景对比度择优（<1.8 回落默认）、侧边栏取 `sideBar.background`；对比度固定 45/60，diff/技能色用 Codex 默认。
+- **80 款主题预设**：浅色 26 款 + 深色 54 款，默认即 Codex 配色（浅色 accent `#339CFF` / 深色 accent `#0169CC`）。
+- **设置 → Codex 主题**：在 DSH 设置页直接选择「浅色主题」「深色主题」预设（每个预设带 6 段色带预览），切换即时生效。
+- **字体与字号自定义**：可分别设置 UI 字体/字号、代码字体/字号；字体下拉只列出本机实际安装的字体，「系统默认」即不覆盖 DSH 原生外观。
+- **持久化**：所有设置写入 `$DSH_HOME/settings.yaml`，重启 DSH 后保持不变。
+- **可随时停用**：在 DSH 设置 → 插件管理中禁用/卸载本插件，即回到 DSH 原生外观。
 
-## 主题参数映射
+## 截图
 
-| Codex 参数 | 浅色 (light) | 深色 (dark) | DSH 映射 |
-|---|---|---|---|
-| `variant` | light | dark | 覆盖层的 `light` / `dark` 半侧 |
-| `accent` | `#339cff` | `#0169cc` | `--dsw-alias-brand-primary` 及品牌/按钮/信息/悬停系 token |
-| `surface` | `#ffffff` | `#111111` | `--dsw-alias-bg-base` 及各层表面 |
-| `ink` | `#1a1c1f` | `#fcfcfc` | `--dsw-alias-label-primary` 及文本阶梯 |
-| `contrast` | 45 | 60 | 次级文字 = ink 按 contrast% 混 surface（`--dsw-alias-label-secondary`）；边框/hover 按 ink 混 surface 的分档推导 |
-| `diffAdded` | `#00a240` | `#00a240` | `--dsw-alias-state-success-*` |
-| `diffRemoved` | `#ba2623` | `#e02e2a` | `--dsw-alias-state-error-*` |
-| `skill` | `#924ff7` | `#b06dff` | `--dsw-alias-state-business-*`（DSH 中技能徽章/目录入口的强调位） |
-| `opaqueWindows` | true | true | 无需映射（DSH 界面本就不透明） |
-| `fonts` | null | null | 面板可选字体族/字号；默认「系统默认」不覆盖 |
-| `codeThemeId` | codex | codex | 不映射（代码块高亮由 Shiki 样式表驱动，不在 `--dsw-*` token 体系内） |
+**深色主题（Codex 默认）**
 
-完整的 token 推导（每步的混合比例）见 `src/client/derive.ts`；字体 token 推导见 `src/client/fonts.ts`。
+![深色主题（Codex 默认）](docs/dark-theme.png)
 
-## 行为
+**浅色主题（Codex 默认）**
 
-- 插件加载时通过 `theme.overrideTokens` 叠加 token 覆盖层（`dsh-codex-theme` 源）：
-  - **浅色**外观 → Codex 浅色调色板；**深色**外观 → Codex 深色调色板；
-  - 覆盖层与内置主题偏好无关，不受 settings 同步/重连回退影响；外观三选一切换即时生效。
-- **设置 → Codex 主题**：直接选择主题——「浅色主题」「深色主题」两个下拉（预设来自 Codex 主题配置，各带 6 段色带预览）；用户不能编辑颜色，只能改 UI/代码字体与字号。修改即时生效。字体下拉由 host 路由（macOS system_profiler，缓存 10 分钟）按本机实际安装的字体过滤，只列可用项。
-- 持久化：host 注册了 `dsh-codex-theme` 设置命名空间，写入 `$DSH_HOME/settings.yaml`（比浏览器本地存储更稳：桌面应用重启换端口也不丢）。
-- 想彻底停用：在 DSH 设置 → 插件管理中禁用/卸载本插件（回到 DSH 原生外观）。
+![浅色主题（Codex 默认）](docs/light-theme.png)
+
+## 运行原理
+
+本插件是一个 DSH 双半插件（host + client）：
+
+- **Host 半侧**（`lib/index.js`）：
+  1. 注册 `dsh-codex-theme` 设置命名空间（写入 `$DSH_HOME/settings.yaml`）；
+  2. 注册本机字体枚举路由（`/api/dsh-codex-theme/fonts`），供外观面板过滤字体下拉，只显示实际安装的字体。
+- **Client 半侧**（`lib/client.js`）：在设置页注入「Codex 主题」面板，通过 `theme.overrideTokens` 把所选预设映射为 DSH 的 `--dsw-*` 主题 token 覆盖层：
+  - `surface` → 背景表面 token，`ink` → 文本 token，`accent` → 品牌/按钮/高亮 token，`contrast` → 次级文本与边框的分档推导，diff 与技能色 → 对应的语义状态 token；
+  - 覆盖层按「浅色 / 深色」外观各自生效，与 DSH 内置主题偏好无关，不受设置同步/重连回退影响，外观三选一切换即时生效。
+
+主题预设表 `src/client/presets.ts` 由 `scripts/build-presets.mjs` 从 Codex 主题配置（VS Code 风格的 `colors`/`tokenColors` 清单）转换生成（已提交，构建不依赖外部文件；重新生成：`node scripts/build-presets.mjs [path/to/codex-themes.json]`）。
+
+## 支持平台
+
+本插件的客户端平台为 DSH Web GUI，跟随 DSH 运行，**macOS 与 Windows 均支持**：
+
+- 主题、字体、设置持久化等全部功能与操作系统无关，在两个平台上行为一致；
+- 字体自动检测在 macOS 上最完整（host 通过 `system_profiler` 枚举本机字体，结果缓存 10 分钟）；其他平台枚举失败时优雅回退，字体下拉会显示全部候选字体。
+
+## 安装
+
+> 要求 Node.js ≥ 20、已安装 DSH（`dsh` 命令可用）。
+
+### 方式一：一键添加
+
+在 DSH Desktop 内置终端（或安装了 DSH CLI 的终端）中执行：
+
+```bash
+# 已发布到 npm registry 时
+dsh plugin add dsh-codex-theme
+
+# 直接从 GitHub 安装（无需发布到 npm）
+dsh plugin add github:Lxd-Ashe/dsh-codex-theme
+```
+
+> 独立使用 dsh CLI 时如未配置默认 profile，需显式指定：`dsh plugin --profile <profile-name> add ...`。
+
+安装完成后重启 DSH（Desktop 应用或 `dsh web`）生效。
+
+### 方式二：源码下载编译安装
+
+```bash
+git clone https://github.com/Lxd-Ashe/dsh-codex-theme.git
+cd dsh-codex-theme
+pnpm install
+pnpm run build          # 产出 lib/index.js（host）与 lib/client.js（client bundle）
+
+# 以本地链接方式安装到 profile
+dsh plugin add link:/absolute/path/to/dsh-codex-theme
+# 独立 dsh CLI 需显式指定 profile：
+#   dsh plugin --profile <profile-name> add link:/absolute/path/to/dsh-codex-theme
+```
+
+安装完成后重启 DSH（Desktop 应用或 `dsh web`）生效。
+
+### 卸载
+
+```bash
+dsh plugin remove dsh-codex-theme
+```
+
+也可以在 DSH 设置 → 插件管理中禁用或卸载本插件。
 
 ## 构建
 
 ```bash
 pnpm install
-pnpm run build   # 产出 lib/index.js（host：注册 settings schema）与 lib/client.js（ModuleLoader bundle）
+pnpm run build       # 产出 lib/index.js 与 lib/client.js
+pnpm run typecheck   # 类型检查
 ```
 
-## 安装到 profile
+## 目录结构
 
-```bash
-dsh plugin --profile web add link:/path/to/dsh-codex-theme
-# 或手动：在 ~/.dsh/profiles/<profile>/package.json 的 dependencies 加
-#   "dsh-codex-theme": "link:/path/to/dsh-codex-theme"
-# 并把 "dsh-codex-theme" 加入 dsh.profile.bundles，然后在该目录 pnpm install
+```
+├── lib/                      # 构建产物（host + client）
+├── docs/                     # 截图（深色 / 浅色主题）
+├── scripts/build-presets.mjs # 从 Codex 主题配置生成预设表
+├── src/
+│   ├── index.ts              # host：设置命名空间 + 字体枚举路由
+│   ├── fonts-route.ts        # 本机字体枚举（macOS system_profiler）
+│   ├── settings-schema.ts    # 设置 schema
+│   └── client/               # client：主题面板与 token 推导
+├── dsh.plugin.json           # DSH 插件清单
+├── cordis.patch.yml          # bundle patch：挂载插件行
+└── build.mjs                 # esbuild 构建脚本
 ```
 
-装好后重启 DSH（Desktop 应用或 `dsh web`）生效。
+## License
+
+本项目采用 [MIT](LICENSE) 开源协议。
