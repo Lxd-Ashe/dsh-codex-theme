@@ -118,6 +118,39 @@
   min-width: 0;
 }
 
+/* ── 外观三选一 ───────────────────────────────────────────────────── */
+.codex-segment {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-base);
+}
+
+.codex-segment button {
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--dsw-alias-label-secondary);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.codex-segment button:hover {
+  color: var(--dsw-alias-label-primary);
+}
+
+.codex-segment button.is-selected {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-2);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+  font-weight: 500;
+}
+
 /* ── 通用控件 ─────────────────────────────────────────────────────── */
 .codex-panel select,
 .codex-number-control input {
@@ -154,7 +187,8 @@
 
 .codex-panel input:focus-visible,
 .codex-panel select:focus-visible,
-.codex-reset:focus-visible {
+.codex-reset:focus-visible,
+.codex-segment button:focus-visible {
   outline: 2px solid var(--dsw-alias-brand-primary);
   outline-offset: 1px;
 }

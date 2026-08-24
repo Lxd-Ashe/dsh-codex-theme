@@ -7,7 +7,8 @@ A Codex theme appearance plugin for DeepSeek Harness (DSH): turns the Codex them
 ## Features
 
 - **80 theme presets**: 26 light + 54 dark, Codex colors by default (light accent `#339CFF` / dark accent `#0169CC`).
-- **Settings → Codex Theme**: pick a light or dark theme preset right from the DSH settings page (each preset shows a 6-swatch color preview); changes apply instantly.
+- **Three-way appearance switch**: switch Light / Dark / Follow system right inside the panel (synced with the appearance setting under Settings → General) — no need to leave the plugin.
+- **Single theme dropdown**: one dropdown that follows the active color scheme — dark mode lists the 54 dark presets, light mode the 26 light presets (each preset shows a 6-swatch color preview); the selected theme is remembered per scheme and restored automatically when you switch back; changes apply instantly.
 - **Font & size customization**: set the UI font/size and code font/size independently; the font dropdown only lists fonts actually installed on your machine, and "System default" leaves the native DSH look untouched.
 - **Persistence**: all settings are written to `$DSH_HOME/settings.yaml` and survive DSH restarts.
 - **Opt out anytime**: disable or uninstall the plugin under DSH Settings → Plugin Management to return to the native DSH appearance.

@@ -20,7 +20,7 @@ import { buildTypographyOverrides } from "./fonts.js";
 import { DARK_PRESETS, LIGHT_PRESETS } from "./presets.js";
 import { sanitizeSettings } from "./settings-model.js";
 import { installScaleStyles, removeScaleStyles } from "./scale.js";
-import { createPanelStore } from "./store.js";
+import { createPanelStore, type ColorScheme, type ThemePreference } from "./store.js";
 import { ThemePanel } from "./ThemePanel";
 
 const LOCALE_NS = "settings.codex-theme";
@@ -32,6 +32,10 @@ const zh = {
   "theme.title": "主题",
   "theme.light": "浅色主题",
   "theme.dark": "深色主题",
+  "appearance.title": "外观",
+  "appearance.light": "浅色",
+  "appearance.dark": "深色",
+  "appearance.system": "跟随系统",
   "font.title": "字体",
   "font.uiFamily": "UI 字体",
   "font.uiSize": "UI 字号",
@@ -51,6 +55,10 @@ const en = {
   "theme.title": "Theme",
   "theme.light": "Light theme",
   "theme.dark": "Dark theme",
+  "appearance.title": "Appearance",
+  "appearance.light": "Light",
+  "appearance.dark": "Dark",
+  "appearance.system": "Follow system",
   "font.title": "Typography",
   "font.uiFamily": "Interface font",
   "font.uiSize": "Interface size",
@@ -64,6 +72,10 @@ const en = {
 } as const;
 
 export interface ThemeServiceLike {
+  /** 当前主题快照：preference（light/dark/system）+ active.colorScheme。 */
+  getTheme(): { preference?: string; active?: { colorScheme?: string } };
+  /** 切换外观偏好（light/dark/system），持久化并发出 theme/change。 */
+  setTheme(id: ThemePreference): void;
   overrideTokens(source: string, tokens: Readonly<Record<string, { readonly light: string; readonly dark: string }>>): () => void;
 }
 
@@ -110,11 +122,6 @@ function composeOverrides(settings: CodexSettings) {
   };
 }
 
-interface ThemeSnapshotLike {
-  preference?: string;
-  active?: { colorScheme?: string };
-}
-
 /**
  * 把 token 覆盖层落到 DOM。标准 web 壳由 ui-layout 的 presenter 做这件事，
  * 但桌面应用的 compatibility shell 没有它（ui-layout 被排除）——插件自带
@@ -123,10 +130,7 @@ interface ThemeSnapshotLike {
  */
 function createTokenPresenter(ctx: ThemeContext) {
   let applied: string[] = [];
-  const schemeOf = () => {
-    const snapshot = (ctx.theme as unknown as { getTheme?: () => ThemeSnapshotLike }).getTheme?.() as ThemeSnapshotLike | undefined;
-    return snapshot?.active?.colorScheme === "dark" ? "dark" : "light";
-  };
+  const schemeOf = (): ColorScheme => (ctx.theme.getTheme().active?.colorScheme === "dark" ? "dark" : "light");
   const present = (tokens: Readonly<Record<string, { readonly light: string; readonly dark: string }>>) => {
     if (typeof document === "undefined") return;
     const scheme = schemeOf();
@@ -168,14 +172,29 @@ export function apply(ctx: ThemeContext): void {
     installScaleStyles(settings.uiFontSize - 16, settings.workspaceFontSize - 14);
   };
   const snapshotOf = (value: CodexSettings) => JSON.stringify(value);
+  /** 当前生效配色（跟随系统时按系统解析）。 */
+  const schemeOf = (): ColorScheme => (ctx.theme.getTheme().active?.colorScheme === "dark" ? "dark" : "light");
+  /** 当前外观偏好（浅色/深色/跟随系统）。 */
+  const preferenceOf = (): ThemePreference => {
+    const preference = ctx.theme.getTheme().preference;
+    return preference === "light" || preference === "dark" || preference === "system" ? preference : "system";
+  };
 
   const store = createPanelStore(settings);
-  let actions: { syncSettings(s: CodexSettings): void } | undefined;
+  let actions: { syncSettings(s: CodexSettings): void; syncTheme(scheme: ColorScheme, preference: ThemePreference): void } | undefined;
   const syncStore = () => actions?.syncSettings(settings);
+  const syncTheme = () => actions?.syncTheme(schemeOf(), preferenceOf());
 
   ctx.effect(() => ctx.locale.register(LOCALE_NS, { zh, en }), "dsh-codex-theme: dictionaries");
 
-  ctx.effect(() => ctx.on("theme/change", () => presenter.apply(composed)), "dsh-codex-theme: scheme presenter sync");
+  ctx.effect(
+    () =>
+      ctx.on("theme/change", () => {
+        presenter.apply(composed);
+        syncTheme();
+      }),
+    "dsh-codex-theme: scheme presenter sync",
+  );
 
   ctx.effect(() => {
     reapply();
@@ -222,10 +241,16 @@ export function apply(ctx: ThemeContext): void {
     scope.set("codeFontSize", settings.codeFontSize);
   };
 
+  /** 切换外观偏好：复用 DSH 内置 ui-theme 设置（持久化 + 即时生效）。 */
+  const setAppearance = (preference: ThemePreference) => {
+    ctx.theme.setTheme(preference);
+  };
+
   const injectProps = (bound: typeof actions) => {
     actions = bound;
     syncStore();
-    return { setThemePreset, setFont, resetTheme };
+    syncTheme();
+    return { setThemePreset, setFont, resetTheme, setAppearance };
   };
 
   ctx.slots.inject("settings.section", () =>

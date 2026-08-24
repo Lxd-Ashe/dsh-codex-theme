@@ -1,6 +1,6 @@
 {
   "name": "dsh-codex-theme",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Codex themes (light + dark) for the DSH web GUI as a configurable appearance plugin: maps codex-theme-v1 knobs onto the DSH --dsw-* token system and adds a Codex appearance settings section (colors, contrast, diff/skill semantic colors, UI/code fonts) persisted to settings.yaml.",
   "type": "module",
   "main": "lib/index.js",

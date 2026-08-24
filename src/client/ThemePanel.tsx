@@ -1,11 +1,13 @@
 /**
  * Codex 主题外观设置面板（挂在 DSH 设置 → Codex 主题）：
- * 主题选择（浅色/深色各一，预设来自 codex 主题配置转换）+ 字体自定义。
+ * 外观三选一（浅色/深色/跟随系统，复用 DSH 内置 ui-theme 偏好）+ 单主题下拉框
+ * （跟随当前生效配色：深色列深色预设、浅色列浅色预设）+ 字体自定义。
  * 用户不再编辑颜色，只能选择主题预设与调整字体样式。
  */
 import { useMemo, useEffect, useState } from "react";
 import { CODE_FONT_CANDIDATES, UI_FONT_CANDIDATES, type ModeKnobs } from "../defaults.js";
 import { DARK_PRESETS, LIGHT_PRESETS } from "./presets.js";
+import type { ColorScheme, ThemePreference } from "./store.js";
 import panelCss from "./panel.css";
 
 const PANEL_CSS_ID = "dsh-codex-theme/panel";
@@ -28,8 +30,9 @@ installPanelStyles();
 
 export interface PanelProps {
   t: (key: string) => string;
-  useStore: <T>(selector: (state: { settings: unknown }) => T) => T;
+  useStore: <T>(selector: (state: { settings: unknown; scheme: string; preference: string }) => T) => T;
   setThemePreset: (mode: "light" | "dark", index: number) => void;
+  setAppearance: (preference: ThemePreference) => void;
   setFont: (field: "uiFont" | "uiFontSize" | "workspaceFontSize" | "codeFont" | "codeFontSize", value: string | number) => void;
   resetTheme: () => void;
 }
@@ -188,9 +191,11 @@ function NumberRow({
   );
 }
 
-/** 面板主体：主题选择 + 字体自定义。 */
-export function ThemePanel({ t, useStore, setThemePreset, setFont, resetTheme }: PanelProps) {
+/** 面板主体：外观三选一 + 单主题下拉（跟随当前配色）+ 字体自定义。 */
+export function ThemePanel({ t, useStore, setThemePreset, setAppearance, setFont, resetTheme }: PanelProps) {
   const settings = useStore((state) => state.settings) as SettingsView;
+  const scheme = useStore((state) => state.scheme) as ColorScheme;
+  const preference = useStore((state) => state.preference) as ThemePreference;
 
   const installedFonts = useInstalledFonts();
 
@@ -210,6 +215,12 @@ export function ThemePanel({ t, useStore, setThemePreset, setFont, resetTheme }:
       ? options
       : [...options, { id: current, label: t("font.unavailable").replace("{font}", current) }];
 
+  const appearanceOptions = [
+    { id: "light", label: t("appearance.light") },
+    { id: "dark", label: t("appearance.dark") },
+    { id: "system", label: t("appearance.system") },
+  ] as const;
+
   return (
     <div className="codex-panel" data-codex-theme-panel>
       <div className="codex-header">
@@ -226,8 +237,29 @@ export function ThemePanel({ t, useStore, setThemePreset, setFont, resetTheme }:
         <div className="codex-subheading">
           <h3>{t("theme.title")}</h3>
         </div>
-        <ThemeSelectRow id="codex-light-preset" label={t("theme.light")} value={settings.lightPreset} presets={LIGHT_PRESETS} onChange={(index) => setThemePreset("light", index)} />
-        <ThemeSelectRow id="codex-dark-preset" label={t("theme.dark")} value={settings.darkPreset} presets={DARK_PRESETS} onChange={(index) => setThemePreset("dark", index)} />
+        <div className="codex-row">
+          <label id="codex-appearance-label">{t("appearance.title")}</label>
+          <div className="codex-segment" role="group" aria-labelledby="codex-appearance-label">
+            {appearanceOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={preference === option.id ? "is-selected" : undefined}
+                aria-pressed={preference === option.id}
+                onClick={() => setAppearance(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <ThemeSelectRow
+          id="codex-theme-preset"
+          label={scheme === "dark" ? t("theme.dark") : t("theme.light")}
+          value={scheme === "dark" ? settings.darkPreset : settings.lightPreset}
+          presets={scheme === "dark" ? DARK_PRESETS : LIGHT_PRESETS}
+          onChange={(index) => setThemePreset(scheme, index)}
+        />
       </div>
 
       <div className="codex-card">
