@@ -1,5 +1,7 @@
 # dsh-codex-theme
 
+[English](README.en.md) | 中文
+
 Codex 主题外观插件 for DeepSeek Harness（DSH）：把 Codex 主题配置（`codex-theme-v1`，80 款浅/深色主题）做成可在 DSH 中直接切换、可自定义的外观插件。
 
 ## 功能
