@@ -1,0 +1,173 @@
+/* Codex 主题外观面板样式：主题选择 + 字体自定义，
+   全部消费 DSH --dsw-* token，随主题自适应。 */
+.codex-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 640px;
+  padding-bottom: 8px;
+  color: var(--dsw-alias-label-primary);
+  font-family: var(--dsw-font-family);
+}
+
+.codex-panel button,
+.codex-panel input,
+.codex-panel select {
+  font: inherit;
+}
+
+/* ── 头部 ─────────────────────────────────────────────────────────── */
+.codex-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.codex-header h2,
+.codex-subheading h3 {
+  margin: 0;
+  font-weight: 500;
+}
+
+.codex-header h2 {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.codex-header p {
+  margin: 3px 0 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.codex-subheading h3 {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
+  margin-bottom: 2px;
+}
+
+.codex-reset {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  color: var(--dsw-alias-label-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.codex-reset:hover {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* ── 卡片与行 ─────────────────────────────────────────────────────── */
+.codex-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-1);
+  padding: 4px 0;
+}
+
+.codex-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(11rem, 16rem);
+  align-items: center;
+  min-height: 50px;
+  gap: 12px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+
+.codex-row:last-child {
+  border-bottom: 0;
+}
+
+.codex-row > label {
+  font-size: 14px;
+  font-weight: 430;
+}
+
+/* ── 主题选择：下拉 + 6 段色带 ────────────────────────────────────── */
+.codex-theme-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  align-items: center;
+  gap: 8px;
+}
+
+.codex-theme-strip {
+  display: grid;
+  height: 26px;
+  grid-template-columns: repeat(6, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-base);
+}
+
+.codex-theme-strip i {
+  display: block;
+  min-width: 0;
+}
+
+/* ── 通用控件 ─────────────────────────────────────────────────────── */
+.codex-panel select,
+.codex-number-control input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-base);
+}
+
+.codex-panel select {
+  padding: 4px 28px 4px 10px;
+  cursor: pointer;
+}
+
+.codex-number-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.codex-number-control input {
+  padding: 5px 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.codex-number-control span {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+}
+
+.codex-panel input:focus-visible,
+.codex-panel select:focus-visible,
+.codex-reset:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: 1px;
+}
+
+.codex-hint {
+  margin: -4px 2px 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+@media (max-width: 620px) {
+  .codex-row {
+    grid-template-columns: 1fr;
+  }
+}

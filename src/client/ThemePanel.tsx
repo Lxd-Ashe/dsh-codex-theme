@@ -1,0 +1,247 @@
+/**
+ * Codex 主题外观设置面板（挂在 DSH 设置 → Codex 主题）：
+ * 主题选择（浅色/深色各一，预设来自 codex 主题配置转换）+ 字体自定义。
+ * 用户不再编辑颜色，只能选择主题预设与调整字体样式。
+ */
+import { useMemo, useEffect, useState } from "react";
+import { CODE_FONT_CANDIDATES, UI_FONT_CANDIDATES, type ModeKnobs } from "../defaults.js";
+import { DARK_PRESETS, LIGHT_PRESETS } from "./presets.js";
+import panelCss from "./panel.css";
+
+const PANEL_CSS_ID = "dsh-codex-theme/panel";
+
+/** host 的字体枚举路由（system_profiler 结果，见 src/fonts-route.ts）。 */
+const FONTS_ROUTE = "/api/dsh-codex-theme/fonts";
+
+/** 把面板样式注入为单个 style 标签（单文件 bundle 约束：不产出独立 css 文件）。 */
+function installPanelStyles(): void {
+  if (typeof document === "undefined") return;
+  if (document.querySelector(`style[data-plugin-css="${PANEL_CSS_ID}"]`) !== null) return;
+  const tag = document.createElement("style");
+  tag.dataset.plugin = "dsh-codex-theme";
+  tag.dataset.pluginCss = PANEL_CSS_ID;
+  tag.textContent = panelCss;
+  document.head.appendChild(tag);
+}
+
+installPanelStyles();
+
+export interface PanelProps {
+  t: (key: string) => string;
+  useStore: <T>(selector: (state: { settings: unknown }) => T) => T;
+  setThemePreset: (mode: "light" | "dark", index: number) => void;
+  setFont: (field: "uiFont" | "uiFontSize" | "workspaceFontSize" | "codeFont" | "codeFontSize", value: string | number) => void;
+  resetTheme: () => void;
+}
+
+interface SettingsView {
+  lightPreset: number;
+  darkPreset: number;
+  uiFont: string;
+  uiFontSize: number;
+  workspaceFontSize: number;
+  codeFont: string;
+  codeFontSize: number;
+}
+
+/** 通过 host 路由拉取本机已安装字体（document.fonts.check 无法区分缺失字体）。 */
+function useInstalledFonts(): string[] | null {
+  const [installed, setInstalled] = useState<string[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const all = [...UI_FONT_CANDIDATES, ...CODE_FONT_CANDIDATES] as string[];
+    fetch(FONTS_ROUTE)
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error(String(response.status)))))
+      .then((data: unknown) => {
+        const families = (data as { families?: unknown })?.families;
+        if (alive) setInstalled(Array.isArray(families) ? families.filter((f): f is string => typeof f === "string") : all);
+      })
+      .catch(() => {
+        if (alive) setInstalled(all);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return installed;
+}
+
+/** 预设的 6 段色带（accent/surface/ink/diff×2/skill）。 */
+function PresetStrip({ knobs }: { knobs: ModeKnobs }) {
+  const segments = [knobs.accent, knobs.surface, knobs.ink, knobs.diffAdded, knobs.diffRemoved, knobs.skill];
+  return (
+    <div className="codex-theme-strip" aria-hidden="true">
+      {segments.map((color, index) => (
+        <i key={index} style={{ backgroundColor: color }} />
+      ))}
+    </div>
+  );
+}
+
+function ThemeSelectRow({
+  id,
+  label,
+  value,
+  presets,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: number;
+  presets: readonly { name: string; knobs: ModeKnobs }[];
+  onChange: (index: number) => void;
+}) {
+  const selected = presets[value] ?? presets[0];
+  return (
+    <div className="codex-row">
+      <label htmlFor={id}>{label}</label>
+      <div className="codex-theme-control">
+        <select id={id} value={value} aria-label={label} onChange={(event) => onChange(Number(event.currentTarget.value))}>
+          {presets.map((preset, index) => (
+            <option key={`${preset.name}-${index}`} value={index}>
+              {preset.name}
+            </option>
+          ))}
+        </select>
+        <PresetStrip knobs={selected.knobs} />
+      </div>
+    </div>
+  );
+}
+
+function SelectRow({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  options: readonly { id: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="codex-row">
+      <label htmlFor={id}>{label}</label>
+      <select id={id} value={value} aria-label={label} onChange={(event) => onChange(event.currentTarget.value)}>
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function NumberRow({
+  id,
+  label,
+  value,
+  min,
+  max,
+  unit,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  unit: string;
+  onChange: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+  const commit = (next: string) => {
+    const parsed = Number(next);
+    if (!Number.isFinite(parsed)) {
+      setDraft(String(value));
+      return;
+    }
+    const clamped = Math.min(max, Math.max(min, Math.round(parsed)));
+    setDraft(String(clamped));
+    onChange(clamped);
+  };
+  return (
+    <div className="codex-row">
+      <label htmlFor={id}>{label}</label>
+      <div className="codex-number-control">
+        <input
+          id={id}
+          type="number"
+          min={min}
+          max={max}
+          value={draft}
+          aria-label={label}
+          onChange={(event) => setDraft(event.currentTarget.value)}
+          onBlur={(event) => commit(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") commit((event.currentTarget as HTMLInputElement).value);
+          }}
+        />
+        <span>{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+/** 面板主体：主题选择 + 字体自定义。 */
+export function ThemePanel({ t, useStore, setThemePreset, setFont, resetTheme }: PanelProps) {
+  const settings = useStore((state) => state.settings) as SettingsView;
+
+  const installedFonts = useInstalledFonts();
+
+  const uiFontOptions = useMemo(() => {
+    const visible =
+      installedFonts === null ? [...UI_FONT_CANDIDATES] : UI_FONT_CANDIDATES.filter((family) => installedFonts.includes(family));
+    return [{ id: "system", label: t("font.system") }, ...visible.map((family) => ({ id: family, label: family }))];
+  }, [installedFonts, t]);
+  const codeFontOptions = useMemo(() => {
+    const visible =
+      installedFonts === null ? [...CODE_FONT_CANDIDATES] : CODE_FONT_CANDIDATES.filter((family) => installedFonts.includes(family));
+    return [{ id: "system", label: t("font.system") }, ...visible.map((family) => ({ id: family, label: family }))];
+  }, [installedFonts, t]);
+  /** 当前选中字体若未安装（如设置从别的机器同步而来），保留该选项以便回退。 */
+  const withCurrent = (options: readonly { id: string; label: string }[], current: string) =>
+    current === "system" || options.some((option) => option.id === current)
+      ? options
+      : [...options, { id: current, label: t("font.unavailable").replace("{font}", current) }];
+
+  return (
+    <div className="codex-panel" data-codex-theme-panel>
+      <div className="codex-header">
+        <div>
+          <h2>{t("title")}</h2>
+          <p>{t("desc")}</p>
+        </div>
+        <button className="codex-reset" type="button" onClick={resetTheme}>
+          {t("action.reset")}
+        </button>
+      </div>
+
+      <div className="codex-card">
+        <div className="codex-subheading">
+          <h3>{t("theme.title")}</h3>
+        </div>
+        <ThemeSelectRow id="codex-light-preset" label={t("theme.light")} value={settings.lightPreset} presets={LIGHT_PRESETS} onChange={(index) => setThemePreset("light", index)} />
+        <ThemeSelectRow id="codex-dark-preset" label={t("theme.dark")} value={settings.darkPreset} presets={DARK_PRESETS} onChange={(index) => setThemePreset("dark", index)} />
+      </div>
+
+      <div className="codex-card">
+        <div className="codex-subheading">
+          <h3>{t("font.title")}</h3>
+        </div>
+        <SelectRow id="codex-ui-font" label={t("font.uiFamily")} value={settings.uiFont} options={withCurrent(uiFontOptions, settings.uiFont)} onChange={(v) => setFont("uiFont", v)} />
+        <NumberRow id="codex-ui-font-size" label={t("font.uiSize")} value={settings.uiFontSize} min={9} max={32} unit="px" onChange={(v) => setFont("uiFontSize", v)} />
+        <NumberRow id="codex-workspace-font-size" label={t("font.workspaceSize")} value={settings.workspaceFontSize} min={9} max={32} unit="px" onChange={(v) => setFont("workspaceFontSize", v)} />
+        <SelectRow id="codex-code-font" label={t("font.codeFamily")} value={settings.codeFont} options={withCurrent(codeFontOptions, settings.codeFont)} onChange={(v) => setFont("codeFont", v)} />
+        <NumberRow id="codex-code-font-size" label={t("font.codeSize")} value={settings.codeFontSize} min={9} max={32} unit="px" onChange={(v) => setFont("codeFontSize", v)} />
+      </div>
+
+      <p className="codex-hint">{t("hint.live")}</p>
+    </div>
+  );
+}

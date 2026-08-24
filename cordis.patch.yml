@@ -1,0 +1,5 @@
+# dsh-codex-theme bundle patch: mount the plugin row (host half + client half).
+# The dsh.client entry is discovered from this activated loader entry.
+- insert:
+    - id: dsh-codex-theme
+      name: dsh-codex-theme
