@@ -164,8 +164,8 @@ export function apply(ctx: ThemeContext): void {
     composed = composeOverrides(settings);
     release = ctx.theme.overrideTokens(OVERRIDE_SOURCE, composed);
     presenter.apply(composed);
-    // 侧边栏/工作区/输入框的硬编码字号跟随 uiFontSize 缩放
-    installScaleStyles(settings.uiFontSize - 16, settings.workspaceFontSize - 14);
+    // 侧边栏/工作区列表的硬编码字号跟随 workspaceFontSize 缩放
+    installScaleStyles(settings.workspaceFontSize - 14);
   };
   const snapshotOf = (value: CodexSettings) => JSON.stringify(value);
   /** 当前生效配色（跟随系统时按系统解析）。 */

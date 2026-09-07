@@ -1,13 +1,16 @@
 {
-  "name": "dsh-codex-theme",
-  "description": "Codex 可自定义外观插件：将 codex-theme-v1 参数（浅/深两组 accent/ink/surface/contrast/diff/skill）映射为 DSH --dsw-* 主题，并在设置页提供「Codex 主题」外观面板（配色/对比度/字体），设置持久化到 settings.yaml",
+  "id": "dsh-external/dsh-codex-theme",
   "version": "0.3.0",
-  "entry": {
-    "name": "dsh-codex-theme",
-    "inject": []
+  "main": "./lib/index.js",
+  "description": "Codex 可自定义外观插件：将 codex-theme-v1 参数（浅/深两组 accent/ink/surface/contrast/diff/skill）映射为 DSH --dsw-* 主题，并在设置页提供「Codex 主题」外观面板（配色/对比度/字体），设置持久化到 settings.yaml",
+  "engines": {
+    "dsh": ">=0.0.1"
+  },
+  "contributes": {
+    "tools": [],
+    "skills": []
   },
   "client": {
-    "platform": "web",
     "main": "./lib/client.js"
   }
 }

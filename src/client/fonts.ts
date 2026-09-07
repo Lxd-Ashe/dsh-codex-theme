@@ -146,8 +146,11 @@ function sizeLadder(uiDelta: number, codeDelta: number): Record<string, { light:
 export function buildTypographyOverrides(
   settings: FontSettings,
 ): Record<string, { readonly light: string; readonly dark: string }> {
-  const pairs = sizeLadder(settings.uiFontSize - 16, settings.codeFontSize - 13);
   const same = (value: string): { light: string; dark: string } => ({ light: value, dark: value });
+  const pairs = sizeLadder(settings.uiFontSize - 16, settings.codeFontSize - 13);
+  // 新版 DSH 的聊天内容字号（消息正文/用户气泡/输入框）由 --dsh-content-font-size
+  // 变量驱动：接管为 UI 字号，与 markdown-base 覆盖保持一致。
+  pairs["--dsh-content-font-size"] = same(`${settings.uiFontSize}px`);
   if (settings.uiFont !== "system") {
     const stack = UI_FONT_STACKS[settings.uiFont] ?? `"${settings.uiFont}", ${SANS_FALLBACK}`;
     pairs["--dsw-font-family"] = same(stack);

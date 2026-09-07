@@ -3,7 +3,7 @@
  * 与当前配色状态（scheme / preference，随 theme/change 同步）。
  * 插件 apply 里经 slot 的 inject 钩子绑定 actions。
  */
-import { defineStore } from "@deepseek-ai/dsh-client-runtime/client";
+import { defineStore } from "@deepseek-ai/dsh-client-store";
 import { DEFAULT_SETTINGS, type CodexSettings } from "../defaults.js";
 
 export type ColorScheme = "light" | "dark";
